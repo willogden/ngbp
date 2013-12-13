@@ -16,8 +16,21 @@ module.exports = function ( grunt ) {
    * Default ngbp options
    */
   var defaultOptions = {
+    source_assets_dir: 'src/assets',
     build_dir: 'build/',
-    compile_dir: 'bin/'
+    compile_dir: 'bin/',
+    build_assets_dir: '<%= ngbp.build_dir %>/assets',
+    build_js_dir: '<%= ngbp.build_dir %>/js',
+    build_css_dir: '<%= ngbp.build_dir %>/css',
+    globs: {
+      app: {
+        js: [ 'src/**/*.js', '!src/**/*.spec.js', '!src/assets/**/*.js' ],
+        jsunit: [ 'src/**/*.spec.js' ],
+        html: [ 'src/app/**/*.tpl.html', 'src/common/**/*.tpl.html' ],
+        css: [ 'src/styles/**/*.css' ],
+        assets: [ 'src/assets/**/*' ]
+      }
+    }
   };
 
   function getModules () {
@@ -72,14 +85,40 @@ module.exports = function ( grunt ) {
     });
   }
 
-  globs = function globs ( grunt ) {
-    grunt.log.writeln("Globs...");
+  /**
+   * Prints out the list of defined globs.
+   */
+  function globs ( prop ) {
+    var done = this.async();
+
+    loadModules( function () {
+      var val;
+      var key = 'ngbp.globs';
+
+      // TODO: mix in task-defined globs
+      
+      if ( prop ) {
+        key += '.' + prop;
+      }
+
+      val = grunt.config.get( key );
+      
+      if ( val instanceof Array ) {
+        grunt.log.writeln( key + "[]: " + grunt.log.wordlist( val ) );
+      } else if ( val instanceof Object ) {
+        grunt.log.writeln( "Keys in " + key + ": " + grunt.log.wordlist( Object.keys( val ) ) );
+      } else {
+        grunt.log.write( key + ": " + val.cyan );
+      }
+
+      done();
+    });
   };
 
   /**
    * Prints out the set of hooked tasks.
    */
-  tasks = function tasks () {
+  function tasks ( subset ) {
     var done = this.async();
 
     loadModules( function () {
@@ -88,9 +127,9 @@ module.exports = function ( grunt ) {
       // TODO: mix in hooks from grunt config
       // TODO: mark tasks as ignored if ignored in grunt config
       // TODO: print watches too
-      // TODO: allow printing subsets of of the build
       
-      function printTasks ( tasks, indent ) {
+      function printTasks ( name, tasks, indent ) {
+        grunt.log.writeln( "\n" + name.blue );
         if ( tasks ) {
           tasks.forEach( function ( task ) {
             grunt.log.writeln( indent + task.priority + " - " + task.task );
@@ -99,15 +138,27 @@ module.exports = function ( grunt ) {
       }
 
       grunt.log.subhead( "Enabled tasks:".magenta );
-      for ( key in hooks ) {
-        grunt.log.writeln( "\n" + key.blue );
-        printTasks( hooks[ key ], "  " );
-      };
+
+      if ( subset ) {
+        if ( hooks[ subset ] ) {
+          printTasks( subset, hooks[ subset ], " " );
+        } else {
+          grunt.fail.warn( "Unknown hook: " + subset );
+        }
+      } else {
+        for ( key in hooks ) {
+          printTasks( key, hooks[ key ], "  " );
+        };
+      }
 
       done();
     });
   };
 
+  /**
+   * Perform the prebuild, build, and postbuild tasks according to the priority
+   * with which they registered.
+   */
   build = function build () {
     var done = this.async();
 
@@ -121,9 +172,14 @@ module.exports = function ( grunt ) {
         });
       });
 
+      grunt.log.writeln("copy config:");
+      grunt.log.writeflags(grunt.config.get('ngbp'));
+
       done();
     });
   };
+
+  /********************************************************************************/
 
 
   /** 
