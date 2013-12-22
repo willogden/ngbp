@@ -1,7 +1,6 @@
 var ngbp = require( '../index' );
-var merge = require( 'deepmerge' );
-var path = require( 'path' );
-var async = require( 'async' );
+var MERGE = require( 'deepmerge' );
+var MOUT = require( 'mout' );
 
 /**
  * The NGBP Grunt task definition.
@@ -13,103 +12,90 @@ module.exports = function ( grunt ) {
   var options;
 
   /**
-   * Default ngbp options
+   * The list of ngbp modules from the package.json file.
    */
-  var defaultOptions = {
-    source_assets_dir: 'src/assets',
-    build_dir: 'build/',
-    compile_dir: 'bin/',
-    build_assets_dir: '<%= ngbp.build_dir %>/assets',
-    build_js_dir: '<%= ngbp.build_dir %>/js',
-    build_css_dir: '<%= ngbp.build_dir %>/css',
-    globs: {
-      app: {
-        js: [ 'src/**/*.js', '!src/**/*.spec.js', '!src/assets/**/*.js' ],
-        jsunit: [ 'src/**/*.spec.js' ],
-        html: [ 'src/app/**/*.tpl.html', 'src/common/**/*.tpl.html' ],
-        css: [ 'src/styles/**/*.css' ],
-        assets: [ 'src/assets/**/*' ]
-      }
-    }
-  };
+  var modules = [];
 
-  function getModules () {
-    var pkg = grunt.config.get( 'pkg' );
+  /**
+   * For all user-specified modules, load 'em up; then inject all user-specified tasks.
+   */
+  function prepareTaskList ( callback ) {
+    ngbp.plugins.loadOrInstall( modules, function () {
+      /**
+       * Now validate any user-specified tasks and then inject them.
+       */
+      options.inject.forEach( function ( task ) {
+        if ( ! task.task ) {
+          grunt.fail.fatal( "Injection error: you cannot inject a task without a 'task'." );
+        }
+        if ( ! task.priority ) {
+          grunt.fail.fatal( "Injection error: you cannot inject a task without a 'priority'." );
+        }
+        if ( ! task.when ) {
+          grunt.fail.fatal( "Injection error: you cannot inject a task without specifying 'when'." );
+        }
 
-    if ( ! pkg ) {
-      grunt.fail.fatal( "ngbp requires a `pkg` variable in your Grunt config." );
-      return;
-    }
+        if ( task.when === 'watch' ) {
+          if ( ! task.glob ) {
+            grunt.fail.fatal( "Injection error: watch tasks need a 'glob' at which change to run." );
+          }
 
-    if ( ! pkg.ngbpModules || ! pkg.ngbpModules.length instanceof Array ) {
-      grunt.fail.fatal( 'ngbp requires an `ngbpModules` array in your `package.json`.' );
-      return;
-    }
+          ngbp.task.injectWatch( task.glob, task.task, task.priority );
+        } else {
+          ngbp.task.injectHook( task.when, task.task, task.priority );
+        }
 
-    return pkg.ngbpModules;
-  };
+      });
 
-  function moduleIsInstalled ( name ) {
-    if ( grunt.file.exists( path.join( path.resolve( 'node_modules' ), name, 'tasks' ) ) ) {
+      // We're done loading modules
+      callback();
+    });
+  }
+
+  /**
+   * Checks user configuration to see if a certain task should be ignored.
+   */
+  function preventTask ( task ) {
+    if ( options.prevent.indexOf( task ) >= 0 || options.prevent.indexOf( task.split( ':' )[0] ) >= 0 ) {
       return true;
     } else {
       return false;
     }
   }
 
-  function loadModules ( callback ) {
-    var modules = getModules();
-
-    // Ensure we have all modules installed
-    async.eachSeries( modules, function forEachModule ( mod, cb ) {
-      if ( ! moduleIsInstalled( mod ) ) {
-        grunt.log.subhead( ( "Installing " + mod + "..." ).blue );
-        grunt.util.spawn({
-          cmd: 'npm',
-          args: [ 'install', '--save-dev', '../'+mod ]
-          // TODO: replace with NPM version
-          //args: [ 'install', '--save-dev', mod ]
-        }, function ( err ) {
-          if ( err ) {
-            grunt.fail.fatal( "Could not install " + mod + ": " + err.toString() );
-          }
-          grunt.loadNpmTasks( mod );
-          cb();
-        });
+  /**
+   * From a list of tasks, check if we should ignore them and run them if we shouldn't.
+   */
+  function runTasks ( tasks ) {
+    tasks.forEach( function forEachTask ( task ) {
+      if ( preventTask( task.taskName ) ) {
+        grunt.log.writeln( "Prevented run of " + task.taskName );
       } else {
-        grunt.loadNpmTasks( mod );
-        cb();
+        grunt.task.run( task.taskName );
       }
-    }, function () {
-      callback();
     });
   }
+
+  /********************************************************************************/
 
   /**
    * Prints out the list of defined globs.
    */
-  function globs ( prop ) {
+  function globs () {
     var done = this.async();
 
-    loadModules( function () {
+    prepareTaskList( function () {
       var val;
       var key = 'ngbp.globs';
 
-      // TODO: mix in task-defined globs
-      
-      if ( prop ) {
-        key += '.' + prop;
+      if ( grunt.option( 'raw' ) ) {
+        val = JSON.stringify( grunt.config.getRaw( key ), {}, "  " );
+      } else {
+        val = JSON.stringify( grunt.config.get( key ), {}, "  " );
       }
 
-      val = grunt.config.get( key );
-      
-      if ( val instanceof Array ) {
-        grunt.log.writeln( key + "[]: " + grunt.log.wordlist( val ) );
-      } else if ( val instanceof Object ) {
-        grunt.log.writeln( "Keys in " + key + ": " + grunt.log.wordlist( Object.keys( val ) ) );
-      } else {
-        grunt.log.write( key + ": " + val.cyan );
-      }
+      grunt.log.writeln( "Globs:".magenta );
+      grunt.log.writeln( val );
 
       done();
     });
@@ -121,34 +107,50 @@ module.exports = function ( grunt ) {
   function tasks ( subset ) {
     var done = this.async();
 
-    loadModules( function () {
+    prepareTaskList( function () {
       var hooks = ngbp.task.getHooks();
+      var watches = ngbp.task.getWatches();
+      var ignore, globKey;
 
-      // TODO: mix in hooks from grunt config
-      // TODO: mark tasks as ignored if ignored in grunt config
-      // TODO: print watches too
-      
       function printTasks ( name, tasks, indent ) {
         grunt.log.writeln( "\n" + name.blue );
         if ( tasks ) {
           tasks.forEach( function ( task ) {
-            grunt.log.writeln( indent + task.priority + " - " + task.task );
+            ignore = preventTask( task.taskName ) ? ' (prevented)' : '';
+            grunt.log.writeln( indent + task.priority + " - " + task.taskName + ignore.yellow );
           });
+
+          if ( ! tasks.length ) {
+            grunt.log.writeln( indent + "(none)" );
+          }
         } 
       }
 
-      grunt.log.subhead( "Enabled tasks:".magenta );
+      if ( subset && subset !== 'watch' ) {
+        grunt.log.subhead( "Tasks:".magenta );
 
-      if ( subset ) {
         if ( hooks[ subset ] ) {
           printTasks( subset, hooks[ subset ], " " );
         } else {
           grunt.fail.warn( "Unknown hook: " + subset );
         }
-      } else {
+      } else if ( ! subset ) {
+        grunt.log.subhead( "Tasks:".magenta );
+
         for ( key in hooks ) {
           printTasks( key, hooks[ key ], "  " );
         };
+      }
+
+      if ( ! subset || subset == 'watch' ) {
+        grunt.log.subhead( "Watches:".magenta );
+
+        Object.keys( watches ).sort().forEach( function ( key ) {
+          globKey = MOUT.string.unCamelCase( key, '.' );
+          glob = grunt.option( 'raw' ) ? grunt.config.getRaw( "ngbp.globs." + globKey )
+            : grunt.config.get( "ngbp.globs." + globKey );
+          printTasks( globKey + ": " + glob, watches[ key ], "  " );
+        });
       }
 
       done();
@@ -159,49 +161,181 @@ module.exports = function ( grunt ) {
    * Perform the prebuild, build, and postbuild tasks according to the priority
    * with which they registered.
    */
-  build = function build () {
+  function build () {
     var done = this.async();
 
-    loadModules( function () {
+    prepareTaskList( function () {
       var build_steps = [ 'prebuild', 'build', 'postbuild' ];
       var hooks = ngbp.task.getHooks();
 
       build_steps.forEach( function forEachBuildStep ( step ) {
-        hooks[ step ].forEach( function forEachTask ( task ) {
-          grunt.task.run( task.task );
-        });
+        runTasks( hooks[ step ] );
       });
-
-      grunt.log.writeln("copy config:");
-      grunt.log.writeflags(grunt.config.get('ngbp'));
 
       done();
     });
   };
 
+  /**
+   * Perform the precompile, compile, and postcompile tasks according to the priority
+   * with which they registered.
+   */
+  function compile () {
+    var done = this.async();
+
+    prepareTaskList( function () {
+      var compile_steps = [ 'precompile', 'compile', 'postcompile' ];
+      var hooks = ngbp.task.getHooks();
+
+      compile_steps.forEach( function forEachCompileStep ( step ) {
+        runTasks( hooks[ step ] );
+      });
+
+      done();
+    });
+  };
+
+  /**
+   * Prepares and then runs the watch command.
+   */
+  function watch () {
+    var done = this.async();
+    var watchConfig = {};
+    var watches, globKey, patterns;
+
+    prepareTaskList( function () {
+      watches = ngbp.task.getWatches();
+
+      for ( key in watches ) {
+        // Get the glob key from the slugified version and then fetch the file patterns.
+        globKey = MOUT.string.unCamelCase( key, '.' );
+        patterns = grunt.config.getRaw( 'ngbp.globs.' + globKey );
+
+        // These are the tasks that need to be run for this glob.
+        var tasks = [];
+        watches[ key ].forEach( function ( task ) {
+          tasks.push( task.taskName );
+        })
+
+        // Create a new watch config entry for it.
+        watchConfig[ key ] = {
+          files: patterns,
+          tasks: tasks
+        };
+      };
+
+      // Load the config into Grunt; we just overwrite it as merging would not make a lot of sense.
+      grunt.loadNpmTasks( 'grunt-contrib-watch' );
+      grunt.config.set( 'watch', watchConfig );
+
+      // Finally, run the task.
+      grunt.task.run( 'watch' );
+      
+      done();
+    });
+  }
+
+  /**
+   * Manage packages through Bower
+   */
+  function bower ( cmd, pkg ) {
+    var done = this.async();
+    ngbp.bower.run( cmd, pkg ).then( function () {
+      done();
+    });
+  }
+
+  /**
+   * Manage ngbp plugins through NPM
+   */
+  function plugins ( cmd, arg2 ) {
+    var done = this.async();
+
+    // print a list of installed tasks if requested...or if no command was supplied
+    if ( ! cmd || cmd === '' || cmd === 'list' ) {
+      grunt.log.writeln( "Current Modules".magenta );
+      modules.forEach( function ( mod ) {
+        grunt.log.writeln( mod + ( ! ngbp.plugins.isInstalled( mod ) ? ' (not installed)' : '' ) );
+      });
+
+      done();
+    } else {
+      switch ( cmd ) {
+        case 'search':
+          ngbp.plugins.search( arg2, function () {
+            done();
+          });
+          break;
+        case 'install':
+          ngbp.plugins.install( arg2, function ( res ) {
+            done();
+          });
+          break;
+        case 'uninstall':
+          ngbp.plugins.uninstall( arg2, function () {
+            done();
+          });
+          break;
+        default:
+          grunt.fail.fatal( "Unknown ngbp:plugins action: " + cmd );
+          break;
+      }
+    }
+  }
+
   /********************************************************************************/
 
+  /**
+   * Merge the default ngbp config into the grunt config so other tasks can access it.
+   */
+  options = MERGE( ngbp.config.default, grunt.config.getRaw( 'ngbp' ) || {} );
+  grunt.config.set( 'ngbp', options );
+
+  /**
+   * Now load all installed modules. We have to do this before any other tasks run so that tasks
+   * spawned to new grunt instances will have the requisite tasks defined. But this is a safe
+   * operation as any modules not yet installed will not be loaded until an appropriate ngbp task is
+   * executed.
+   */
+  modules = ngbp.plugins.getModules();
+  ngbp.plugins.loadModules( modules );
 
   /** 
-   * Task definitions
+   * This is the actual ngbp task.
    */
-  grunt.registerTask( 'ngbp', function ( cmd, arg2 ) {
-    options = merge( defaultOptions, grunt.config.getRaw( 'ngbp' ) || {} );
-    grunt.config.set( 'ngbp', options );
-
-    switch ( cmd ) {
-      case 'build':
-        build.call( this );
-        break;
-      case 'globs':
-        globs.call( this, arg2 );
-        break;
-      case 'tasks':
-        tasks.call( this, arg2 );
-        break;
-      default:
-        grunt.fail.fatal( "Unknown ngbp task: " + cmd );
-        break;
+  grunt.registerTask( 'ngbp', function ( cmd, arg2, arg3 ) {
+    if ( ! cmd || cmd === '' ) {
+      grunt.log.writeln( "No task specified; running build and compile." );
+      build.call( this );
+      compile.call( this );
+    } else {
+      switch ( cmd ) {
+        case 'build':
+          build.call( this );
+          break;
+        case 'watch':
+          watch.call( this );
+          break;
+        case 'compile':
+          compile.call( this );
+          break;
+        case 'globs':
+          globs.call( this, arg2 );
+          break;
+        case 'tasks':
+          tasks.call( this, arg2 );
+          break;
+        case 'bower':
+          bower.call( this, arg2, arg3 );
+          break;
+        case 'plugins':
+          plugins.call( this, arg2, arg3 );
+          break;
+        default:
+          grunt.fail.fatal( "Unknown ngbp task: " + cmd );
+          break;
+      }
     }
   });
 };
+
