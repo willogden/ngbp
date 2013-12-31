@@ -1,6 +1,6 @@
 {
   "name": "ngbp",
-  "version": "0.4.0-alpha.1",
+  "version": "0.4.0-alpha.2",
   "description": "A flexible, extensible, best-practices Grunt-based build automation plaform for web projects.",
   "homepage": "https://github.com/ngbp/ng-boilerplate",
   "author": {
