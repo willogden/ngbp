@@ -1,4 +1,4 @@
-var ngbp = require( '../index' );
+var ngbp = require( './../lib/ngbp' );
 var MOUT = require( 'mout' );
 
 /**

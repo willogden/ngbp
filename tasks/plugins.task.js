@@ -1,4 +1,4 @@
-var ngbp = require( '../index' );
+var ngbp = require( './../lib/ngbp' );
 
 /**
  * The NGBP Grunt task definition.

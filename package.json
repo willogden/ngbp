@@ -23,6 +23,7 @@
   "engines": {
     "node": ">= 0.8"
   },
+  "main": "lib/ngbp",
   "devDependencies": {
     "grunt": "*"
   },
@@ -34,6 +35,9 @@
     "async": "~0.2",
     "command": "0.0.4",
     "mout": "~0.8",
-    "q": "~0.9.7"
+    "nopt": "~2.1.2",
+    "q": "~0.9.7",
+    "colors": "~0.6.2",
+    "prompt": "~0.2.12"
   }
 }
