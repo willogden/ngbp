@@ -1,24 +1,24 @@
-var ngbp = require( './../lib/ngbp' );
+var NGBP = require( './../lib/ngbp' );
 var MOUT = require( 'mout' );
 
 /**
  * The NGBP Grunt task definition.
  */
-module.exports = function ( grunt ) {
+module.exports = function ( GRUNT ) {
   /**
    * Perform the prebuild, build, and postbuild tasks according to the priority
    * with which they registered.
    */
-  grunt.registerTask( 'ngbp-build', function () {
+  GRUNT.registerTask( 'ngbp-build', function () {
     var done = this.async();
 
-    ngbp.task.prepareTaskList()
+    NGBP.task.prepareTaskList()
     .then( function () {
       var build_steps = [ 'prebuild', 'build', 'postbuild' ];
-      var hooks = ngbp.task.getHooks();
+      var hooks = NGBP.task.getHooks();
 
       build_steps.forEach( function forEachBuildStep ( step ) {
-        ngbp.task.runTasks( hooks[ step ] );
+        NGBP.task.runTasks( hooks[ step ] );
       });
 
       done();

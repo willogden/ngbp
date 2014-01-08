@@ -1,28 +1,28 @@
-var ngbp = require( './../lib/ngbp' );
+var NGBP = require( './../lib/ngbp' );
 var MOUT = require( 'mout' );
 
 /**
  * The NGBP Grunt task definition.
  */
-module.exports = function ( grunt ) {
+module.exports = function ( GRUNT ) {
   /**
    * Prints out the list of defined globs.
    */
-  grunt.registerTask( 'ngbp-globs', function () {
+  GRUNT.registerTask( 'ngbp-globs', function () {
     var done = this.async();
 
-    ngbp.task.prepareTaskList().then( function () {
+    NGBP.task.prepareTaskList().then( function () {
       var val;
       var key = 'ngbp.globs';
 
-      if ( grunt.option( 'raw' ) ) {
-        val = JSON.stringify( grunt.config.getRaw( key ), {}, "  " );
+      if ( GRUNT.option( 'raw' ) ) {
+        val = JSON.stringify( GRUNT.config.getRaw( key ), {}, "  " );
       } else {
-        val = JSON.stringify( grunt.config.get( key ), {}, "  " );
+        val = JSON.stringify( GRUNT.config.get( key ), {}, "  " );
       }
 
-      grunt.log.writeln( "Globs:".magenta );
-      grunt.log.writeln( val );
+      GRUNT.log.writeln( "Globs:".magenta );
+      GRUNT.log.writeln( val );
 
       done();
     });

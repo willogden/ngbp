@@ -1,31 +1,31 @@
-var ngbp = require( './../lib/ngbp' );
+var NGBP = require( './../lib/ngbp' );
 var MOUT = require( 'mout' );
 
 /**
  * The NGBP Grunt task definition.
  */
-module.exports = function ( grunt ) {
+module.exports = function ( GRUNT ) {
   /**
    * Prepares and then runs the watch command.
    */
-  grunt.registerTask( 'ngbp-watch', function () {
+  GRUNT.registerTask( 'ngbp-watch', function () {
     var done = this.async();
     var watchConfig = {};
     var watches, globKey, patterns;
 
-    ngbp.task.prepareTaskList().then( function () {
-      watches = ngbp.task.getWatches();
+    NGBP.task.prepareTaskList().then( function () {
+      watches = NGBP.task.getWatches();
 
       for ( key in watches ) {
         // Get the glob key from the slugified version and then fetch the file patterns.
         globKey = MOUT.string.unCamelCase( key, '.' );
-        patterns = grunt.config.getRaw( 'ngbp.globs.' + globKey );
+        patterns = GRUNT.config.getRaw( 'ngbp.globs.' + globKey );
 
         // These are the tasks that need to be run for this glob.
         var tasks = [];
         watches[ key ].forEach( function ( task ) {
           tasks.push( task.taskName );
-        })
+        });
 
         // Create a new watch config entry for it.
         watchConfig[ key ] = {
@@ -35,12 +35,12 @@ module.exports = function ( grunt ) {
       };
 
       // Load the config into Grunt; we just overwrite it as merging would not make a lot of sense.
-      grunt.loadNpmTasks( 'grunt-contrib-watch' );
-      grunt.task.renameTask( 'watch', 'delta' );
-      grunt.config.set( 'delta', watchConfig );
+      GRUNT.loadNpmTasks( 'grunt-contrib-watch' );
+      GRUNT.task.renameTask( 'watch', 'delta' );
+      GRUNT.config.set( 'delta', watchConfig );
 
       // Finally, run the task.
-      grunt.task.run( 'delta' );
+      GRUNT.task.run( 'delta' );
       
       done();
     });

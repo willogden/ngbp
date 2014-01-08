@@ -1,15 +1,15 @@
-var ngbp = require( './../lib/ngbp' );
+var NGBP = require( './../lib/ngbp' );
 
 /**
  * The NGBP Grunt task definition.
  */
-module.exports = function ( grunt ) {
+module.exports = function ( GRUNT ) {
   /**
    * Runs bower tasks.
    */
-  grunt.registerTask( 'ngbp-bower', function ( cmd, pkg ) {
+  GRUNT.registerTask( 'ngbp-bower', function ( cmd, pkg ) {
     var done = this.async();
-    ngbp.bower.run( cmd, pkg ).then( function () {
+    NGBP.bower.run( cmd, pkg ).then( function () {
       done();
     });
   });
