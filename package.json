@@ -1,6 +1,6 @@
 {
   "name": "ngbp",
-  "version": "0.4.0-alpha.2",
+  "version": "0.4.0-alpha.3",
   "description": "A flexible, extensible, best-practices Grunt-based build automation plaform for web projects.",
   "homepage": "https://github.com/ngbp/ng-boilerplate",
   "author": {
@@ -38,6 +38,7 @@
     "nopt": "~2.1.2",
     "q": "~0.9.7",
     "colors": "~0.6.2",
-    "prompt": "~0.2.12"
+    "prompt": "~0.2.12",
+    "mkdirp": "~0.3.5"
   }
 }
