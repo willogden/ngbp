@@ -43,7 +43,7 @@ module.exports = function ( GRUNT ) {
       GRUNT.task.run( 'delta' );
       
       done();
-    });
+    }).catch( NGBP.log.fatal );
   });
 };
 

@@ -25,7 +25,7 @@ module.exports = function ( GRUNT ) {
       GRUNT.log.writeln( val );
 
       done();
-    });
+    }).catch( NGBP.log.fatal );
   });
 };
 

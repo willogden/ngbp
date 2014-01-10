@@ -18,11 +18,11 @@ module.exports = function ( GRUNT ) {
       var hooks = NGBP.task.getHooks();
 
       build_steps.forEach( function forEachBuildStep ( step ) {
-        NGBP.task.runTasks( hooks[ step ] );
+        NGBP.task.queueTasks( hooks[ step ].map( function ( t ) { return t.taskName; } ) );
       });
 
       done();
-    });
+    }).catch( NGBP.log.fatal );
   });
 };
 

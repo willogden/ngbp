@@ -61,7 +61,7 @@ module.exports = function ( GRUNT ) {
       }
 
       done();
-    });
+    }).catch( NGBP.log.fatal );
   });
 };
 
