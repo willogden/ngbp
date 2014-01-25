@@ -284,8 +284,6 @@ function _postWrite ( syncUser ) {
   if ( syncUser ) {
     _config = MOUT.object.merge( _config, _userConfig );
   }
-
-  GRUNT.config.set( 'ngbp', _config );
 }
 
 config.user.get = function get ( key ) {
