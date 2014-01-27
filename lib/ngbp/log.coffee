@@ -6,8 +6,22 @@ MOUT = require 'mout'
 OPTIONS = require './options'
 UTIL = require './util'
 
-log = {}
+# Whether or not to prefix the log messages with "[ngbp] "
 prefix = true
+
+# The log module
+log = module.exports = {}
+
+# Objects that hold convenience methods for logging only under certain conditions.
+log.verbose = {}
+log.debug = {}
+log.notverbose = {}
+
+# A way to switch between verbose and notverbose modes. For example, this will
+# write 'foo' if verbose logging is enabled, otherwise write 'bar':
+# verbose.write('foo').or.write('bar')
+log.verbose.or = log.notverbose
+log.notverbose.or = log.verbose
 
 # TODO(jdm): include timestamp
 wrap = ( text, newline ) ->
@@ -24,10 +38,12 @@ log.error = ( msg ) ->
   prefix = oldPrefix
 
 log.fatal = ( error, code ) ->
-  if typeof error is 'object'
+  if not error?
+    log.error "Unknown error."
+  else if UTIL.typeOf( error ) is 'Error'
     log.error error.toString()
 
-    if error.stack and ( OPTIONS.stack || OPTIONS.debug )
+    if error.stack? and ( OPTIONS( 'stack' ) or OPTIONS( 'debug' ) )
       console.error error.stack
   else
     log.error error
@@ -60,27 +76,21 @@ log.enablePrefix = () ->
   prefix = true
 
 # Create verbose versions of the log functions.
-# Totally ripped from Grunt.
-log.verbose = {}
-log.notverbose = {}
-
+# Concept totally ripped from Grunt.
 MOUT.object.forOwn log, ( val, key ) ->
   if UTIL.typeOf( val ) is 'Function'
+    log.debug[ key ] = () ->
+      if OPTIONS 'debug'
+        val.apply log, arguments
+      log.debug
+
     log.verbose[ key ] = () ->
-      if OPTIONS.verbose
+      if OPTIONS 'verbose'
         val.apply log, arguments
       log.verbose
 
     log.notverbose[ key ] = () ->
-      if ! OPTIONS.verbose
+      if not OPTIONS 'verbose'
         val.apply log, arguments
       log.notverbose
-
-# A way to switch between verbose and notverbose modes. For example, this will
-# write 'foo' if verbose logging is enabled, otherwise write 'bar':
-# verbose.write('foo').or.write('bar')
-log.verbose.or = log.notverbose
-log.notverbose.or = log.verbose
-
-module.exports = log
 

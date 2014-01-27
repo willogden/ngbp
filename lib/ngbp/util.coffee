@@ -7,9 +7,10 @@ GLOB = require 'glob'
 GS = require 'glob-stream'
 ES = require 'event-stream'
 ASYNC = require 'async'
+MOUT = require 'mout'
 
-# ngbp libraries
-CONFIG = require './config'
+# ngbp
+ngbp = require './../ngbp'
 
 # The exported module.
 util = module.exports = {}
@@ -17,6 +18,9 @@ util = module.exports = {}
 # This fixes a Windows problem with truncating output when using process.exit
 # See https://github.com/cowboy/node-exit
 util.exit = EXIT
+
+# Mout is used all over ngbp, so we might as well expose it here.
+util.mout = MOUT
 
 # Convenience method for creating deferreds.
 util.q = Q
@@ -66,7 +70,8 @@ classMap =
   "[object Error]": "Error"
 
 # Match "[object ___]" where "___" is a [[Class]] value.
-className = /^\[object (.*)\]$/
+classNameRE = /^\[object (.*)\]$/
+errorRE = /Error$/
 
 # Return a specific useful value based on a passed object's [[Class]].
 # Based on https://github.com/cowboy/javascript-getclass
@@ -76,15 +81,18 @@ util.typeOf = ( value ) ->
   else if not value?
     return "Undefined"
 
-  # Get the "[object [[Class]]]" string for the passed value.
-  key = classMap.toString.call(value)
+  # Get the "[object [[Class]]]" string for the passed value and pull out the class name.
+  key = classMap.toString.call value
+  clazz = classNameRE.exec( key )
 
-  if classMap.hasOwnProperty key
-    # If the key exists in classMap, return its [[Class]].
-    return classMap[ key ]
+  if clazz? and clazz.length > 0
+    # If it's an error of some kind, just return "Error"
+    if errorRE.test( clazz[1] )
+      "Error"
+    else
+      clazz[1]
   else
-    # If not in "specific" mode or key doesn't match pattern, just return
-    # the more generic "Object".
+    # Well, it's an object and that's the best we can do, considering.
     "Object"
 
 util.isArray = ( value ) ->
@@ -93,26 +101,36 @@ util.isArray = ( value ) ->
 # Execute a function for every non-object property, recursing into objects and arrays.
 # This is a direct port of grunt.util.recurse
 util.forEveryProperty = ( value, fn, fnContinue ) ->
-  if fnContinue? and fnContinue( value ) is false
+  if fnContinue and fnContinue( value ) is false
     # Skip value if necessary.
     value
   else if util.isArray value
     # If value is an array, recurse.
-    return value.map ( value ) ->
-      return util.forEveryProperty value, fn, fnContinue
-  else if util.kindOf( value ) is 'Object'
+    value.map ( value ) ->
+      util.forEveryProperty value, fn, fnContinue
+  else if util.typeOf( value ) is 'Object'
     # If value is an object, recurse.
     obj = {}
-    MOUT.forOwn value, forEach ( val, key ) ->
-      obj[ key ] = recurse val, fn, fnContinue
+    MOUT.object.forIn value, ( val, key ) ->
+      obj[ key ] = util.forEveryProperty val, fn, fnContinue
 
-    return obj
+    obj
   else
     # Otherwise pass value into fn and return.
-    return fn value
+    fn value
 
 # Process a template relative to the ngbp configuration, if needed.
 util.template = ( tpl, data ) ->
-  data = CONFIG() if not data?
-  TPL tpl, data
+  last = tpl
+  try
+    while tpl.indexOf( '<%' ) >= 0
+      tpl = TPL tpl, data
+      # if nothing changed since last time, there's obviously nothing left to process
+      if tpl is last
+        break
+      last = tpl
+  catch err
+     ngbp.log.fatal "An error occurred while processing a template: #{err.toString()}"
+
+  tpl
 

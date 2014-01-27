@@ -3,16 +3,12 @@ NOMNOM = require 'nomnom'
 PKG = require './../../package.json'
 
 # ngbp libraries
-BOOTSTRAP = require './bootstrap'
-LOG = require './log'
-
-# The default tasks to run
-defaultTasks = [ 'default' ]
+ngbp = require './../ngbp'
 
 # Process the command-line options.
 options = NOMNOM
 .script( 'ngbp' )
-.option 'tasks',
+.option 'todo',
   list: true
   help: 'The tasks you wish to run. Defaults to \'default\'.'
   position: 0
@@ -34,7 +30,7 @@ options = NOMNOM
 .option 'debug',
   abbr: 'd'
   help: 'Enable debugging mode for tasks that support it.'
-  list: true
+  flag: true
 .option 'stack',
   help: 'Print a stack trace when exiting with a warning or fatal error.'
   flag: true
@@ -50,7 +46,10 @@ options = NOMNOM
   help: 'The JSON configuration file to use. Defaults to `ngbp.json` and will find upward.'
   default: 'ngbp.json'
   full: 'config'
-.option 'prop',
+.option 'plugins',
+  help: 'Load plugins from the specified directory.'
+  list: true
+.option 'conf',
   help: 'Get a configuration value.'
 .option 'set',
   abbr: 's'
@@ -107,27 +106,23 @@ options = NOMNOM
 ###
 cli = () ->
   runDefaultTasks = true
-  tasks = if options.tasks? then options.tasks else []
 
   # TODO(jdm): check if we need to init
 
-  # Determine if any cli options imply we don't need to run any tasks
-  if options.tasks
+  # With any of these options, we needn't necessarily run the default tasks.
+  if options.flows or options.tasks or options.write
     runDefaultTasks = false
-  if options.write
-    runDefaultTasks = false
-  if options.prop and ! options.set
+
+  # If the user is getting a value - but not setting it - we needn't necessarily run the default
+  # task.
+  if options.conf and ! options.set
     runDefaultTasks = false
 
   # Tasks were specified, we don't need to run the default ones either
-  if tasks.length > 0
+  if options.todo?.length > 0
     runDefaultTasks = false
 
-  # If we need to, run the default tasks
-  if runDefaultTasks
-    tasks = defaultTasks
-
-  BOOTSTRAP( options )
+  ngbp.bootstrap( options )
   .then () ->
     # Handle the command line options
 
@@ -139,8 +134,13 @@ cli = () ->
     # if options.allow
     #   options.allow.forEach TASK.allowTask
 
+    # TODO(jdm): process plugins
+
     # TODO(jdm): process set
-    # TODO(jdm): process prop
+
+    # If requested, print out a configuration value.
+    if options.conf?
+      ngbp.log.writeln "#{options.conf} = #{ngbp.config( options.conf )}"
 
     # TODO(jdm): process inject
     # if options.inject
@@ -153,11 +153,20 @@ cli = () ->
     #     TASK.inject UTIL.parseTaskString( task, true )
 
     # TODO(jdm): process tasks
+    if options.tasks?
+      ngbp.log.header "Defined Tasks:"
+      ngbp.task.getTasks().forEach ( task ) ->
+        ngbp.log.writeln task.name
+        if task.dep.length
+          ngbp.log.writeln "  - " + task.dep.join( " " )
+
     # TODO(jdm): process flows
 
-    # TODO(jdm): make it so!
-    #TASK.runTasks( tasks ) if tasks.length > 0
-    console.log "Normally, I'd run tasks right now: " + tasks.join(" ")
+    # Number One, make it so!
+    if runDefaultTasks or options.todo?.length > 0
+      ngbp.engage options.todo
+  .catch ( err ) ->
+    ngbp.fatal err
 
 # Our only export is the cli function
 module.exports = cli

@@ -10,18 +10,18 @@ nRequire = ( name ) ->
 
 # Expose module functions globally.
 nExpose = ( o, fn, newFn ) ->
-  if ngbp.util.typeOf( fn ) is 'Function'
+  if ngbp.util.typeOf( o[ fn ] ) is 'Function'
     ngbp[ newFn or fn ] = o[ fn ].bind o
   else
     ngbp[ newFn or fn ] = o[ fn ]
 
 # Export some NGBP libs.
 # TODO(jdm): Port these to coffee and streams
-#nRequire 'task'
 #nRequire 'scaffold'
 #nRequire 'bower'
 
 # Gruntless, Good to Go
+nRequire 'task'
 nRequire 'util'
 nRequire 'plugins'
 nRequire 'config'
@@ -32,7 +32,9 @@ nRequire 'flow'
 nRequire 'bootstrap'
 
 # Expose some methods from the included libs directly under the ngbp namespace.
-#nExpose ngbp.task, 'runTasks'
+nExpose ngbp.task, 'engage'
 nExpose ngbp.log, 'verbose'
+nExpose ngbp.log, 'debug'
+nExpose ngbp.log, 'fatal'
 nExpose ngbp.config, 'user', 'userConfig'
 

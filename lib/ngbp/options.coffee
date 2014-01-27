@@ -8,8 +8,8 @@ options = module.exports = ( key, value ) ->
     data[ key ]
 
 options.init = ( o ) ->
-  data = o || {}
-  data
+  data = if o? then o else {}
+  @
 
 options._raw = () ->
   data
