@@ -95,8 +95,13 @@ util.typeOf = ( value ) ->
     # Well, it's an object and that's the best we can do, considering.
     "Object"
 
+util.isA = ( value, type ) ->
+  util.typeOf( value ) is type
+
 util.isArray = ( value ) ->
-  if util.typeOf( value ) is "Array" then true else false
+  util.isA value, "Array"
+util.isFunction = ( value ) ->
+  util.isA value, "Function"
 
 # Execute a function for every non-object property, recursing into objects and arrays.
 # This is a direct port of grunt.util.recurse
