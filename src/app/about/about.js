@@ -1,7 +1,5 @@
 angular.module( 'ngBoilerplate.about', [
-  'ui.state',
-  'placeholders',
-  'ui.bootstrap'
+  'ui.state'
 ])
 
 .config(function config( $stateProvider ) {
@@ -24,6 +22,4 @@ angular.module( 'ngBoilerplate.about', [
     "And another choice for you.",
     "but wait! A third!"
   ];
-})
-
-;
+});

@@ -14,7 +14,7 @@ module.exports = function ( grunt ) {
   grunt.loadNpmTasks('grunt-conventional-changelog');
   grunt.loadNpmTasks('grunt-bump');
   grunt.loadNpmTasks('grunt-coffeelint');
-  grunt.loadNpmTasks('grunt-recess');
+  grunt.loadNpmTasks('grunt-sass');
   grunt.loadNpmTasks('grunt-karma');
   grunt.loadNpmTasks('grunt-ngmin');
   grunt.loadNpmTasks('grunt-html2js');
@@ -162,9 +162,9 @@ module.exports = function ( grunt ) {
       build_css: {
         src: [
           '<%= vendor_files.css %>',
-          '<%= recess.build.dest %>'
+          '<%= sass.dest %>'
         ],
-        dest: '<%= recess.build.dest %>'
+        dest: '<%= sass.dest %>'
       },
       /**
        * The `compile_js` target is the concatenation of our application source
@@ -238,33 +238,25 @@ module.exports = function ( grunt ) {
     },
 
     /**
-     * `recess` handles our LESS compilation and uglification automatically.
-     * Only our `main.less` file is included in compilation; all other files
-     * must be imported from this file.
-     */
-    recess: {
-      build: {
-        src: [ '<%= app_files.less %>' ],
-        dest: '<%= build_dir %>/assets/<%= pkg.name %>-<%= pkg.version %>.css',
-        options: {
-          compile: true,
-          compress: false,
-          noUnderscores: false,
-          noIDs: false,
-          zeroUnits: false
+    * Search for module/submodule scss files to add to main.scss
+    */
+    sassmoduleimport : {
+        build: {
+          src: ['src/app/**/*']
         }
-      },
-      compile: {
-        src: [ '<%= recess.build.dest %>' ],
-        dest: '<%= recess.build.dest %>',
-        options: {
-          compile: true,
-          compress: true,
-          noUnderscores: false,
-          noIDs: false,
-          zeroUnits: false
-        }
-      }
+    },
+
+    /**
+    * Sass buildstep
+    */
+    sass: {
+        dist: {
+            files: {
+                '<%= build_dir %>/assets/<%= pkg.name %>-<%= pkg.version %>.css': '<%= app_files.scss %>'
+            }
+            
+        },
+        dest: '<%= build_dir %>/assets/<%= pkg.name %>-<%= pkg.version %>.css'
     },
 
     /**
@@ -381,7 +373,7 @@ module.exports = function ( grunt ) {
           '<%= html2js.common.dest %>',
           '<%= html2js.app.dest %>',
           '<%= vendor_files.css %>',
-          '<%= recess.build.dest %>'
+          '<%= sass.dest %>'
         ]
       },
 
@@ -395,7 +387,7 @@ module.exports = function ( grunt ) {
         src: [
           '<%= concat.compile_js.dest %>',
           '<%= vendor_files.css %>',
-          '<%= recess.compile.dest %>'
+          '<%= sass.dest %>'
         ]
       }
     },
@@ -504,9 +496,9 @@ module.exports = function ( grunt ) {
       /**
        * When the CSS files change, we need to compile and minify them.
        */
-      less: {
-        files: [ 'src/**/*.less' ],
-        tasks: [ 'recess:build' ]
+      scss: {
+        files: [ 'src/**/*.scss' ],
+        tasks: [ 'sassmoduleimport','sass' ]
       },
 
       /**
@@ -560,7 +552,7 @@ module.exports = function ( grunt ) {
    * The `build` task gets your app ready to run for development and testing.
    */
   grunt.registerTask( 'build', [
-    'clean', 'html2js', 'jshint', 'coffeelint', 'coffee', 'recess:build',
+    'clean', 'html2js', 'jshint', 'coffeelint', 'coffee', 'sassmoduleimport','sass',
     'concat:build_css', 'copy:build_app_assets', 'copy:build_vendor_assets',
     'copy:build_appjs', 'copy:build_vendorjs', 'index:build', 'karmaconfig',
     'karma:continuous' 
@@ -571,7 +563,7 @@ module.exports = function ( grunt ) {
    * minifying your code.
    */
   grunt.registerTask( 'compile', [
-    'recess:compile', 'copy:compile_assets', 'ngmin', 'concat:compile_js', 'uglify', 'index:compile'
+   'sassmoduleimport', 'sass', 'copy:compile_assets', 'ngmin', 'concat:compile_js', 'uglify', 'index:compile'
   ]);
 
   /**
@@ -589,6 +581,15 @@ module.exports = function ( grunt ) {
   function filterForCSS ( files ) {
     return files.filter( function ( file ) {
       return file.match( /\.css$/ );
+    });
+  }
+
+  /**
+   * A utility function to get all app SCSS sources.
+   */
+  function filterForSCSS ( files ) {
+    return files.filter( function ( file ) {
+      return file.match( /\.scss$/ );
     });
   }
 
@@ -633,6 +634,28 @@ module.exports = function ( grunt ) {
         return grunt.template.process( contents, {
           data: {
             scripts: jsFiles
+          }
+        });
+      }
+    });
+  });
+
+  /** 
+   * Adds all the module abd submodule SCSS files as import statements to src/scss/main.scss
+   */
+  grunt.registerMultiTask( 'sassmoduleimport', 'Process main.scss template', function () {
+    var dirRE = new RegExp( '^('+grunt.config('build_dir')+'|'+grunt.config('compile_dir')+')\/', 'g' );
+ 
+    var scssFiles = filterForSCSS( this.filesSrc ).map( function ( file ) {
+      console.log(file);
+      return file.replace( dirRE, '' );
+    });
+    
+    grunt.file.copy('src/scss/main.tpl.scss', 'src/scss/main.scss', { 
+      process: function ( contents, path ) {
+        return grunt.template.process( contents, {
+          data: {
+            imports: scssFiles
           }
         });
       }
