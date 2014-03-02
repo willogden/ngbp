@@ -132,7 +132,17 @@ module.exports = function ( grunt ) {
       build_vendorjs: {
         files: [
           {
-            src: [ '<%= vendor_files.js %>' ],
+            src: [ '<%= vendor_files.js %>', '<%= vendor_files.js_lt_ie9 %>'],
+            dest: '<%= build_dir %>/',
+            cwd: '.',
+            expand: true
+          }
+        ]
+      },
+      build_scss: {
+        files: [
+          {
+            src: [ '<%= app_files.scss %>' , '<%= vendor_files.scss %>'],
             dest: '<%= build_dir %>/',
             cwd: '.',
             expand: true
@@ -162,9 +172,9 @@ module.exports = function ( grunt ) {
       build_css: {
         src: [
           '<%= vendor_files.css %>',
-          '<%= sass.dest %>'
+          '<%= sass.options.dest %>'
         ],
-        dest: '<%= sass.dest %>'
+        dest: '<%= sass.options.dest %>'
       },
       /**
        * The `compile_js` target is the concatenation of our application source
@@ -183,26 +193,19 @@ module.exports = function ( grunt ) {
           'module.suffix' 
         ],
         dest: '<%= compile_dir %>/assets/<%= pkg.name %>-<%= pkg.version %>.js'
-      }
-    },
-
-    /**
-     * `grunt coffee` compiles the CoffeeScript sources. To work well with the
-     * rest of the build, we have a separate compilation task for sources and
-     * specs so they can go to different places. For example, we need the
-     * sources to live with the rest of the copied JavaScript so we can include
-     * it in the final build, but we don't want to include our specs there.
-     */
-    coffee: {
-      source: {
+      },
+      /**
+       * The `compile_js_lt_ie9` target is the concatenation of our application source
+       * code and all specified vendor source code into a single file (for less than ie9).
+       */
+      compile_js_lt_ie9: {
         options: {
-          bare: true
+          banner: '<%= meta.banner %>'
         },
-        expand: true,
-        cwd: '.',
-        src: [ '<%= app_files.coffee %>' ],
-        dest: '<%= build_dir %>',
-        ext: '.js'
+        src: [ 
+          '<%= vendor_files.js_lt_ie9 %>'
+        ],
+        dest: '<%= compile_dir %>/assets/<%= pkg.name %>-lt-ie9-<%= pkg.version %>.js'
       }
     },
 
@@ -232,7 +235,8 @@ module.exports = function ( grunt ) {
           banner: '<%= meta.banner %>'
         },
         files: {
-          '<%= concat.compile_js.dest %>': '<%= concat.compile_js.dest %>'
+          '<%= concat.compile_js.dest %>': '<%= concat.compile_js.dest %>',
+          '<%= concat.compile_js_lt_ie9.dest %>': '<%= concat.compile_js_lt_ie9.dest %>'
         }
       }
     },
@@ -252,11 +256,12 @@ module.exports = function ( grunt ) {
     sass: {
         dist: {
             files: {
-                '<%= build_dir %>/assets/<%= pkg.name %>-<%= pkg.version %>.css': '<%= app_files.scss %>'
+                '<%= build_dir %>/assets/<%= pkg.name %>-<%= pkg.version %>.css': '<%= build_dir %>/scss/main.scss'
             }
-            
         },
-        dest: '<%= build_dir %>/assets/<%= pkg.name %>-<%= pkg.version %>.css'
+        options: {
+          dest: '<%= build_dir %>/assets/<%= pkg.name %>-<%= pkg.version %>.css'
+        }
     },
 
     /**
@@ -287,24 +292,6 @@ module.exports = function ( grunt ) {
         eqnull: true
       },
       globals: {}
-    },
-
-    /**
-     * `coffeelint` does the same as `jshint`, but for CoffeeScript.
-     * CoffeeScript is not the default in ngBoilerplate, so we're just using
-     * the defaults here.
-     */
-    coffeelint: {
-      src: {
-        files: {
-          src: [ '<%= app_files.coffee %>' ]
-        }
-      },
-      test: {
-        files: {
-          src: [ '<%= app_files.coffeeunit %>' ]
-        }
-      }
     },
 
     /**
@@ -373,7 +360,10 @@ module.exports = function ( grunt ) {
           '<%= html2js.common.dest %>',
           '<%= html2js.app.dest %>',
           '<%= vendor_files.css %>',
-          '<%= sass.dest %>'
+          '<%= sass.options.dest %>'
+        ],
+        src_lt_ie9: [
+          '<%= vendor_files.js_lt_ie9 %>'
         ]
       },
 
@@ -386,8 +376,10 @@ module.exports = function ( grunt ) {
         dir: '<%= compile_dir %>',
         src: [
           '<%= concat.compile_js.dest %>',
-          '<%= vendor_files.css %>',
-          '<%= sass.dest %>'
+          '<%= concat.build_css.dest %>'
+        ],
+        src_lt_ie9: [
+          '<%= concat.compile_js_lt_ie9.dest %>'
         ]
       }
     },
@@ -453,17 +445,6 @@ module.exports = function ( grunt ) {
       },
 
       /**
-       * When our CoffeeScript source files change, we want to run lint them and
-       * run our unit tests.
-       */
-      coffeesrc: {
-        files: [ 
-          '<%= app_files.coffee %>'
-        ],
-        tasks: [ 'coffeelint:src', 'coffee:source', 'karma:unit:run', 'copy:build_appjs' ]
-      },
-
-      /**
        * When assets are changed, copy them. Note that this will *not* copy new
        * files, so this is probably not very useful.
        */
@@ -513,20 +494,6 @@ module.exports = function ( grunt ) {
         options: {
           livereload: false
         }
-      },
-
-      /**
-       * When a CoffeeScript unit test file changes, we only want to lint it and
-       * run the unit tests. We don't want to do any live reloading.
-       */
-      coffeeunit: {
-        files: [
-          '<%= app_files.coffeeunit %>'
-        ],
-        tasks: [ 'coffeelint:test', 'karma:unit:run' ],
-        options: {
-          livereload: false
-        }
       }
     }
   };
@@ -552,9 +519,9 @@ module.exports = function ( grunt ) {
    * The `build` task gets your app ready to run for development and testing.
    */
   grunt.registerTask( 'build', [
-    'clean', 'html2js', 'jshint', 'coffeelint', 'coffee', 'sassmoduleimport','sass',
+    'clean', 'html2js', 'jshint', 'sassmoduleimport','sass',
     'concat:build_css', 'copy:build_app_assets', 'copy:build_vendor_assets',
-    'copy:build_appjs', 'copy:build_vendorjs', 'index:build', 'karmaconfig',
+    'copy:build_appjs', 'copy:build_scss','copy:build_vendorjs', 'index:build', 'karmaconfig',
     'karma:continuous' 
   ]);
 
@@ -563,7 +530,7 @@ module.exports = function ( grunt ) {
    * minifying your code.
    */
   grunt.registerTask( 'compile', [
-   'sassmoduleimport', 'sass', 'copy:compile_assets', 'ngmin', 'concat:compile_js', 'uglify', 'index:compile'
+   'copy:compile_assets', 'ngmin', 'concat:compile_js', 'concat:compile_js_lt_ie9', 'uglify', 'index:compile'
   ]);
 
   /**
@@ -601,9 +568,15 @@ module.exports = function ( grunt ) {
    */
   grunt.registerMultiTask( 'index', 'Process index.html template', function () {
     var dirRE = new RegExp( '^('+grunt.config('build_dir')+'|'+grunt.config('compile_dir')+')\/', 'g' );
+    
     var jsFiles = filterForJS( this.filesSrc ).map( function ( file ) {
       return file.replace( dirRE, '' );
     });
+    
+    var jsLtIE9Files = filterForJS( grunt.file.expand(this.data.src_lt_ie9) ).map( function ( file ) {
+      return file.replace( dirRE, '' );
+    });
+
     var cssFiles = filterForCSS( this.filesSrc ).map( function ( file ) {
       return file.replace( dirRE, '' );
     });
@@ -613,6 +586,7 @@ module.exports = function ( grunt ) {
         return grunt.template.process( contents, {
           data: {
             scripts: jsFiles,
+            scripts_lt_ie9: jsLtIE9Files,
             styles: cssFiles,
             version: grunt.config( 'pkg.version' )
           }
@@ -651,7 +625,7 @@ module.exports = function ( grunt ) {
       return file.replace( dirRE, '' );
     });
     
-    grunt.file.copy('src/scss/main.tpl.scss', 'src/scss/main.scss', { 
+    grunt.file.copy('src/scss/main.scss', grunt.config('build_dir') + '/scss/main.scss', { 
       process: function ( contents, path ) {
         return grunt.template.process( contents, {
           data: {

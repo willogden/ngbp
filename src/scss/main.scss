@@ -1,0 +1,7 @@
+/* Import Bourbon */
+@import "vendor/bourbon/app/assets/stylesheets/_bourbon.scss";
+@import  "src/scss/_bitters.scss";
+
+/* Introspected imports */
+<% imports.forEach( function ( file ) { %>
+@import "<%= file %>";<% }); %>

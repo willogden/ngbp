@@ -30,7 +30,7 @@ module.exports = {
     ctpl: [ 'src/common/**/*.tpl.html' ],
 
     html: [ 'src/index.html' ],
-    scss: 'src/scss/main.scss'
+    scss: [ 'src/**/*.scss']
   },
 
   /**
@@ -66,9 +66,17 @@ module.exports = {
       'vendor/angular-ui-router/release/angular-ui-router.js',
       'vendor/angular-ui-utils/modules/route/route.js'
     ],
+    js_lt_ie9: [
+      'vendor/html5shiv/dist/html5shiv.js'
+    ],
     css: [
+      'vendor/normalize-css/normalize.css'
+    ],
+    scss: [
+      'vendor/bourbon/**/*.scss'
     ],
     assets: [
+      
     ]
   },
 };

@@ -3,6 +3,10 @@
   <head>
     <title ng-bind="pageTitle"></title>
 
+    <!--[if lt IE 9]><% scripts_lt_ie9.forEach( function ( file ) { %>
+    <script type="text/javascript" src="<%= file %>"></script><% }); %>
+    <![endif]-->
+
     <!-- compiled CSS --><% styles.forEach( function ( file ) { %>
     <link rel="stylesheet" type="text/css" href="<%= file %>" /><% }); %>
 
