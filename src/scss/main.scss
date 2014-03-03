@@ -1,6 +1,25 @@
 /* Import Bourbon */
 @import "vendor/bourbon/app/assets/stylesheets/_bourbon.scss";
-@import  "src/scss/_bitters.scss";
+@import "src/scss/_bitters.scss";
+@import "src/scss/susy/_susy.scss";
+
+$susy: (
+  columns: 12,
+  gutters: .25,
+  gutter-position: inside,
+);
+
+body { 
+	@include container(12); 
+}
+
+nav { 
+	@include span(3 of 12); 
+}
+
+main { 
+	@include span(9 of 12); 
+}
 
 /* Introspected imports */
 <% imports.forEach( function ( file ) { %>
