@@ -4,6 +4,8 @@
 @import "vendor/breakpoint-sass/stylesheets/_breakpoint.scss";
 @import "src/scss/_bitters.scss";
 
+/* Grids & Nav */
+
 $susy: (
   columns: 4,
   gutters: .25,
@@ -19,45 +21,29 @@ $layout-med: layout(8);
 $layout-large: layout(12);
 $layout-xl: layout(16);
 
+$breakpoint-no-query-fallbacks: true;
 
 body { 
 	@include container($layout-xl);
 }
 
-nav { 
-	@include break;
-	@include span(3 at span(-3 wide) isolate);
-	@include susy-breakpoint(max-width $bp-med, $layout-med) {
-		@include transition (all 1.0s ease-in-out);
-	} 
-}
-
-main { 
-	@include span(full at 1 isolate);
-	
-	@include susy-breakpoint(max-width $bp-med, $layout-med) {
-		@include transition (all 1.0s ease-in-out);
-	} 
-}
-
-nav.visible {
-	@include push(0);
-    
-    ~ main {
-    	@include push(3);
-    }
-}
-
-
-@include susy-breakpoint($bp-med, $layout-med) {
-	
-	header {
+header {
+	@include susy-breakpoint($bp-med, $layout-med, $no-query: '.no-mqs') {	
 		button {
 			display: none;
 		}
 	}
+}
 
-	nav { 
+nav { 
+	@include break;
+	@include span(3 at span(-3 wide) isolate);
+
+	@include susy-breakpoint(max-width $bp-med, $layout-med) {
+		@include transition (all 1.0s ease-in-out);
+	}
+
+	@include susy-breakpoint($bp-med, $layout-med, $no-query: '.no-mqs') {
 		@include span(full at 1 isolate break);
 
 		ul {
@@ -67,23 +53,32 @@ nav.visible {
 				float: left;
 			} 
 		}
-		
+	} 
+}
+
+main { 
+	@include span(full at 1 isolate);
+	
+	@include susy-breakpoint(max-width $bp-med, $layout-med) {
+		@include transition (all 1.0s ease-in-out);
 	}
 
-  	main { 
-  		@include span(full at 1 isolate break); 
-  	}
+	@include susy-breakpoint($bp-med, $layout-med, $no-query: '.no-mqs') {
+		@include span(full at 1 isolate break);
+	} 
 }
 
-@include susy-breakpoint($bp-large, $layout-large) {
-	
+nav.nav__visible {
+	@include push(0);
+    
+    ~ main {
+    	@include push(3);
+    }
 }
 
-@include susy-breakpoint($bp-xl, $layout-xl) {
-
-}
 
 /* Styles */
+
 header {
 	button {
 		margin: 5px;

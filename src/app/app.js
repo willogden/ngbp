@@ -21,16 +21,17 @@ angular.module( 'ngBoilerplate', [
     }
   });
 
-  $scope.navClass = "hidden";
+  $scope.navClass = "nav__hidden";
 
   $scope.toggleNavClass = function(){
-    console.log("click");
-    if ($scope.navClass === "hidden") {
-      $scope.navClass = "visible";
+    
+    if ($scope.navClass === "nav__hidden") {
+      $scope.navClass = "nav__visible";
     }
     else {
-      $scope.navClass = "hidden";
+      $scope.navClass = "nav__hidden";
     }
+
   };
 });
 

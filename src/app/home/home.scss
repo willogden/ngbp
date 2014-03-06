@@ -1,15 +1,15 @@
-@include susy-breakpoint($bp-med, $layout-med) {
-	
-	/* Get number of columns */
-	$layout-med-columns: susy-get(columns,$layout-med);
-	
-	main { 
-	  		.content_one {
-	  			@include span($layout-med-columns/2 of $layout-med-columns);
-	  		}
+.home { 
+  	@include susy-breakpoint($bp-med, $layout-med, $no-query: '.no-mqs') {	
+  		
+  		/* Get number of columns */
+		$layout-med-columns: susy-get(columns,$layout-med);
 
-	  		.content_two {
-	  			@include span($layout-med-columns/2 of $layout-med-columns);
-	  		}
-	}
+  		.home_content-one {
+  			@include span($layout-med-columns/2 of $layout-med-columns);
+  		}
+
+  		.home_content-two {
+  			@include span($layout-med-columns/2 of $layout-med-columns);
+  		}
+  	}
 }
