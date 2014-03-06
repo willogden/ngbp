@@ -1,0 +1,15 @@
+@include susy-breakpoint($bp-med, $layout-med) {
+	
+	/* Get number of columns */
+	$layout-med-columns: susy-get(columns,$layout-med);
+	
+	main { 
+	  		.content_one {
+	  			@include span($layout-med-columns/2 of $layout-med-columns);
+	  		}
+
+	  		.content_two {
+	  			@include span($layout-med-columns/2 of $layout-med-columns);
+	  		}
+	}
+}

@@ -20,7 +20,17 @@ angular.module( 'ngBoilerplate', [
       $scope.pageTitle = toState.data.pageTitle + ' | ngBoilerplate' ;
     }
   });
-})
 
-;
+  $scope.navClass = "hidden";
+
+  $scope.toggleNavClass = function(){
+    console.log("click");
+    if ($scope.navClass === "hidden") {
+      $scope.navClass = "visible";
+    }
+    else {
+      $scope.navClass = "hidden";
+    }
+  };
+});
 

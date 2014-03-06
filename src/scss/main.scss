@@ -1,24 +1,115 @@
 /* Import Bourbon */
 @import "vendor/bourbon/app/assets/stylesheets/_bourbon.scss";
-@import "src/scss/_bitters.scss";
 @import "src/scss/susy/_susy.scss";
+@import "vendor/breakpoint-sass/stylesheets/_breakpoint.scss";
+@import "src/scss/_bitters.scss";
 
 $susy: (
-  columns: 12,
+  columns: 4,
   gutters: .25,
   gutter-position: inside,
 );
 
+$bp-small : 24em;
+$bp-med : 46.8em;
+$bp-large : 50em;
+$bp-xl : 73em;
+
+$layout-med: layout(8);
+$layout-large: layout(12);
+$layout-xl: layout(16);
+
+
 body { 
-	@include container(12); 
+	@include container($layout-xl);
 }
 
 nav { 
-	@include span(3 of 12); 
+	@include break;
+	@include span(3 at span(-3 wide) isolate);
+	@include susy-breakpoint(max-width $bp-med, $layout-med) {
+		@include transition (all 1.0s ease-in-out);
+	} 
 }
 
 main { 
-	@include span(9 of 12); 
+	@include span(full at 1 isolate);
+	
+	@include susy-breakpoint(max-width $bp-med, $layout-med) {
+		@include transition (all 1.0s ease-in-out);
+	} 
+}
+
+nav.visible {
+	@include push(0);
+    
+    ~ main {
+    	@include push(3);
+    }
+}
+
+
+@include susy-breakpoint($bp-med, $layout-med) {
+	
+	header {
+		button {
+			display: none;
+		}
+	}
+
+	nav { 
+		@include span(full at 1 isolate break);
+
+		ul {
+			float: right;
+
+			li {
+				float: left;
+			} 
+		}
+		
+	}
+
+  	main { 
+  		@include span(full at 1 isolate break); 
+  	}
+}
+
+@include susy-breakpoint($bp-large, $layout-large) {
+	
+}
+
+@include susy-breakpoint($bp-xl, $layout-xl) {
+
+}
+
+/* Styles */
+header {
+	button {
+		margin: 5px;
+		float: right;
+		width: 2em;
+	}
+
+	h3 {
+		float:left;
+	}
+
+}
+
+nav {
+	
+	background-color: $base-accent-color;
+
+	ul {
+		li {
+			padding: 5px;
+			a {
+				color: $base-accent-opposite-color;
+			}
+			
+		}
+	}
 }
 
 /* Introspected imports */
