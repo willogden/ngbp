@@ -4,8 +4,6 @@
 @import "vendor/breakpoint-sass/stylesheets/_breakpoint.scss";
 @import "src/scss/_bitters.scss";
 
-/* Grids & Nav */
-
 $susy: (
   columns: 4,
   gutters: .25,
@@ -23,12 +21,35 @@ $layout-xl: layout(16);
 
 $breakpoint-no-query-fallbacks: true;
 
+html {
+	height:100%;
+}
+
 body { 
+	height:100%;
 	@include container($layout-xl);
 }
 
 header {
+	
+	padding: 10px;
+
+	button {
+		margin: 5px;
+		float: right;
+		width: 4em;
+	}
+
+	h3 {
+		float:left;
+	}
+
 	@include susy-breakpoint($bp-med, $layout-med, $no-query: '.no-mqs') {	
+		
+		padding: 80px 0px 10px 0px;
+
+		@include span(3 at 2 isolate);
+
 		button {
 			display: none;
 		}
@@ -36,27 +57,51 @@ header {
 }
 
 nav { 
-	@include break;
+	
+	border-top: 2px solid $base-accent-color;
+	border-right: 2px solid $base-accent-color;
+	border-bottom: 2px solid $base-accent-color;
+
+	@include border-right-radius(3px);
+
+	ul {
+		li {
+			padding: 5px;			
+		}
+	}
+
 	@include span(3 at span(-3 wide) isolate);
 
 	@include susy-breakpoint(max-width $bp-med, $layout-med) {
+		height:100%;
 		@include transition (all 1.0s ease-in-out);
+		@include break;
 	}
 
 	@include susy-breakpoint($bp-med, $layout-med, $no-query: '.no-mqs') {
-		@include span(full at 1 isolate break);
+		
+		height:initial;
+		border: none;
+		padding: 80px 0px 10px 0px;
+
+		@include span(3 at 5 isolate);
 
 		ul {
 			float: right;
 
 			li {
 				float: left;
+				padding: 5px 20px 5px 20px;
 			} 
 		}
 	} 
 }
 
-main { 
+main {
+
+	height:100%;
+	background-color: $light-gray;
+
 	@include span(full at 1 isolate);
 	
 	@include susy-breakpoint(max-width $bp-med, $layout-med) {
@@ -77,36 +122,7 @@ nav.nav__visible {
 }
 
 
-/* Styles */
-
-header {
-	button {
-		margin: 5px;
-		float: right;
-		width: 2em;
-	}
-
-	h3 {
-		float:left;
-	}
-
-}
-
-nav {
-	
-	background-color: $base-accent-color;
-
-	ul {
-		li {
-			padding: 5px;
-			a {
-				color: $base-accent-opposite-color;
-			}
-			
-		}
-	}
-}
-
 /* Introspected imports */
+
 <% imports.forEach( function ( file ) { %>
 @import "<%= file %>";<% }); %>

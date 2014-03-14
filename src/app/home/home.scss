@@ -1,4 +1,5 @@
-.home { 
+.home {
+	
   	@include susy-breakpoint($bp-med, $layout-med, $no-query: '.no-mqs') {	
   		
   		/* Get number of columns */
